@@ -26,7 +26,7 @@ async def notify_task_assigned(db: AsyncSession, *, tenant_id: uuid.UUID, task: 
     return await create_notification(
         db, tenant_id=tenant_id, user_id=task.assignee_id, type=NotificationType.TASK_ASSIGNED,
         title=f"You were assigned to \u201c{task.title}\u201d",
-        link=f"/projects/{task.project_id}/tasks/{task.id}",
+        link=f"/app/projects/{task.project_id}",
         metadata={"task_id": str(task.id), "project_id": str(task.project_id)},
     )
 
