@@ -61,7 +61,10 @@ async def start_timer(db: AsyncSession, *, tenant_id: uuid.UUID, user_id: uuid.U
 async def get_running_timer(db: AsyncSession, *, tenant_id: uuid.UUID, user_id: uuid.UUID) -> TimeEntry | None:
     result = await db.execute(
         select(TimeEntry).where(
-            TimeEntry.tenant_id == tenant_id, TimeEntry.user_id == user_id, TimeEntry.ended_at.is_(None)
+            TimeEntry.tenant_id == tenant_id,
+        TimeEntry.user_id == user_id,
+        TimeEntry.ended_at.is_(None),
+        TimeEntry.duration_minutes.is_(None),
         )
     )
     return result.scalar_one_or_none()
