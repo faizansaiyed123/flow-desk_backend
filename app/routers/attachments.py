@@ -63,5 +63,7 @@ async def delete_attachment(
     ctx: AuthContext = Depends(require_role(MembershipRole.MEMBER)),
     db: AsyncSession = Depends(get_db),
 ):
-    await attachment_service.delete_attachment(db, tenant_id=ctx.tenant_id, attachment_id=attachment_id)
+    await attachment_service.delete_attachment(
+        db, tenant_id=ctx.tenant_id, actor_id=ctx.user.id, attachment_id=attachment_id
+    )
     return MessageResponse(message="Attachment deleted.")

@@ -91,3 +91,13 @@ async def test_list_and_delete_attachment(client, tmp_path, monkeypatch):
 
     listed_after = await client.get(f"/api/v1/attachments?project_id={project_id}", headers=headers)
     assert len(listed_after.json()) == 0
+
+    # Deletions must remain visible in the workspace audit trail after the file row is removed.
+    activity = await client.get("/api/v1/activity", headers=headers)
+    assert activity.status_code == 200
+    deleted_event = next(
+        (item for item in activity.json() if item["action"] == "attachment.deleted"),
+        None,
+    )
+    assert deleted_event is not None
+    assert deleted_event["entity_label"] == "doc.pdf"

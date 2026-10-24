@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,14 +19,22 @@ def _minutes_between(start: datetime, end: datetime) -> int:
 async def create_time_entry(db: AsyncSession, *, tenant_id: uuid.UUID, user_id: uuid.UUID, data: dict) -> TimeEntry:
     await get_project(db, tenant_id=tenant_id, project_id=data["project_id"])
 
+    started_at = data["started_at"]
+    ended_at = data.get("ended_at")
     duration = data.get("duration_minutes")
-    if duration is None and data.get("ended_at"):
-        duration = _minutes_between(data["started_at"], data["ended_at"])
+
+    # A manually logged duration is a completed time entry, not a running timer.
+    # Timer state is represented by ended_at IS NULL, so keep the timestamps and
+    # duration consistent for all manual-entry payload shapes.
+    if ended_at is not None:
+        duration = _minutes_between(started_at, ended_at)
+    elif duration is not None:
+        ended_at = started_at + timedelta(minutes=duration)
 
     entry = TimeEntry(
         tenant_id=tenant_id, user_id=user_id,
         project_id=data["project_id"], task_id=data.get("task_id"),
-        description=data.get("description"), started_at=data["started_at"], ended_at=data.get("ended_at"),
+        description=data.get("description"), started_at=started_at, ended_at=ended_at,
         duration_minutes=duration, is_billable=data.get("is_billable", True),
     )
     db.add(entry)
@@ -53,7 +61,10 @@ async def start_timer(db: AsyncSession, *, tenant_id: uuid.UUID, user_id: uuid.U
 async def get_running_timer(db: AsyncSession, *, tenant_id: uuid.UUID, user_id: uuid.UUID) -> TimeEntry | None:
     result = await db.execute(
         select(TimeEntry).where(
-            TimeEntry.tenant_id == tenant_id, TimeEntry.user_id == user_id, TimeEntry.ended_at.is_(None)
+            TimeEntry.tenant_id == tenant_id,
+        TimeEntry.user_id == user_id,
+        TimeEntry.ended_at.is_(None),
+        TimeEntry.duration_minutes.is_(None),
         )
     )
     return result.scalar_one_or_none()
