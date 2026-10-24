@@ -105,7 +105,9 @@ def read_file(attachment: Attachment) -> bytes:
     return Path(attachment.storage_path).read_bytes()
 
 
-async def delete_attachment(db: AsyncSession, *, tenant_id: uuid.UUID, attachment_id: uuid.UUID) -> None:
+async def delete_attachment(
+    db: AsyncSession, *, tenant_id: uuid.UUID, actor_id: uuid.UUID, attachment_id: uuid.UUID
+) -> None:
     attachment = await get_attachment(db, tenant_id=tenant_id, attachment_id=attachment_id)
     try:
         os.remove(attachment.storage_path)
@@ -113,3 +115,7 @@ async def delete_attachment(db: AsyncSession, *, tenant_id: uuid.UUID, attachmen
         pass
     await db.delete(attachment)
     await db.flush()
+    await activity_service.log_activity(
+        db, tenant_id=tenant_id, actor_id=actor_id, action="attachment.deleted",
+        entity_type="attachment", entity_id=attachment.id, entity_label=attachment.file_name,
+    )
