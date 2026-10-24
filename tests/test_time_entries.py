@@ -32,6 +32,36 @@ async def test_create_manual_time_entry_with_duration(client):
     )
     assert resp.status_code == 201, resp.text
     assert resp.json()["duration_minutes"] == 90
+    assert resp.json()["ended_at"] == "2026-01-01T10:30:00Z"
+
+    # A duration-only manual entry is completed and must not masquerade as the active timer.
+    running = await client.get("/api/v1/time-entries/timer/running", headers=headers)
+    assert running.status_code == 200
+    assert running.json() is None
+
+
+async def test_can_start_timer_after_manual_time_entry(client):
+    headers, project_id = await _setup(client)
+    manual = await client.post(
+        "/api/v1/time-entries",
+        json={
+            "project_id": project_id,
+            "started_at": "2026-01-01T09:00:00Z",
+            "duration_minutes": 45,
+            "description": "Manual work",
+        },
+        headers=headers,
+    )
+    assert manual.status_code == 201, manual.text
+    assert manual.json()["ended_at"] is not None
+
+    started = await client.post(
+        "/api/v1/time-entries/timer/start",
+        json={"project_id": project_id},
+        headers=headers,
+    )
+    assert started.status_code == 201, started.text
+    assert started.json()["ended_at"] is None
 
 
 async def test_create_manual_time_entry_computes_duration_from_end_time(client):
