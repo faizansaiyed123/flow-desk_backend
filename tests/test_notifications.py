@@ -45,6 +45,7 @@ async def test_task_assignment_creates_notification_for_assignee(client, db_sess
     assert notifications.status_code == 200
     assert notifications.json()["total"] == 1
     assert "Assigned task" in notifications.json()["items"][0]["title"]
+    assert notifications.json()["items"][0]["link"] == f"/app/projects/{project_id}"
 
     unread = await client.get("/api/v1/notifications/unread-count", headers=teammate_headers)
     assert unread.json()["count"] == 1
