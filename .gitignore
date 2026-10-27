@@ -1,0 +1,30 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Test/build output
+.coverage
+coverage/
+htmlcov/
+test-results/
+playwright-report/
+dist/
+build/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs and local runtime data
+logs/
+*.log
+storage/
+uploads/*
+!uploads/.gitkeep
+
+# Frontend/tooling dependencies if ever installed locally
+node_modules/
